@@ -20,13 +20,14 @@ function Post(content) {
 }
 
 Post.prototype.init = function(raw) {
-	var metaData = raw.split(/[---]+/).filter(function(e) {
-		return e.trim().length > 0;
-	});
-	// this.content = metaData[metaData.length - 1];
-	this.content = metaData;
+	var metaData = raw.split(/-{3}/g);
+	this.content = raw;
 
-	console.log(this.content);
+	try {
+		this.metadata = yaml.load(metaData[1]);
+	} catch(e) {
+		throw e;
+	}
 };
 
 Post.prototype.slug = function() {
@@ -37,25 +38,35 @@ Post.prototype.title = function() {
 	return this.metadata.title;
 };
 
+Post.prototype.content = function() {
+	var content = this.content;
+	content = this.removeMore(content);
+	content = this.fixImages(content);
+	content = this.stripNewLines(content);
+	content = this.fixBlockQuotes(content);
+
+	return content;
+};
+
 Post.prototype.timestamp = function() {
 	return this.metadata.timestamp;
 };
 
-Post.prototype.removeMore = function() {
-	this.content.replace('<!-- more -->', '');
+Post.prototype.removeMore = function(content) {
+	return content.replace('<!-- more -->', '');
 };
 
-Post.prototype.fixImages = function() {
-	this.content.replace(/\{% img.*?(\/.*?) \d+ \d+\s?(.*?) %}/g, '![$2]($1)');
-	this.content.replace(/images/g, 'content/images');
+Post.prototype.fixImages = function(content) {
+	content = content.replace(/\{% img.*?(\/.*?) \d+ \d+\s?(.*?) %}/g, '![$2]($1)');
+	return content.replace(/images/g, 'content/images');
 };
 
-Post.prototype.stripNewLines = function() {
-	this.content = this.content.replace(/(\r\n|\n|\r)/gm, '');
+Post.prototype.stripNewLines = function(content) {
+	return content.replace(/(\r\n|\n|\r)/gm, '');
 };
 
-Post.prototype.fixBlockQuotes = function() {
-	this.content = this.content.replace(/{% blockquote %}(.*?){% endblockquote %}/g, '> $1');
+Post.prototype.fixBlockQuotes = function(content) {
+	return content.replace(/{% blockquote %}(.*?){% endblockquote %}/g, '> $1');
 };
 
 module.exports = exports = Post;
