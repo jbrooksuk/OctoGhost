@@ -3,7 +3,9 @@ var commander = require('commander'),
 	fs        = require('fs'),
 	path      = require('path'),
 	async     = require('async'),
-	Post      = require('./Post');
+	Store     = require('./Store');
+	Kitten    = require('kitten'),
+	uuid      = require('node-uuid');
 
 require('colors');
 
@@ -24,24 +26,33 @@ if(commander.load) {
 	var dbFile = commander.load;
 	console.log("Using %s for Ghost database.".blue, dbFile);
 
+	var store = new Store(dbFile);
 	octoPosts();
 }else{
 	console.log('An import file must be passed.'.bold.red);
 }
 
 function octoPosts(db) {
-	var postDir = path.join(octoDir, '/source/_posts'),
-		ext, post;
+	var postDir = path.join(octoDir, '/source/_posts'), ext, postFile, id;
+
 	fs.readdir(postDir, function(err, files) {
-		async.each(files, function(file, callback) {
+		async.eachSeries(files, function(file, callback) {
+			postFile = postDir + '/' + file;
 			ext = path.extname(file);
-			if(ext === '.markdown') {
-				fs.readFile(path.join(postDir, file), 'utf8', function(err, content) {
+			if(ext === '.markdown' || ext === '.md') {
+				id = uuid.v4();
+				Kitten.load(postFile, function(err, post) {
 					if(err) {
 						throw err;
 					}
-					post = new Post(content);
-					process.exit(0);
+
+					post.created_at = post.date;
+					post.updated_at = post.date;
+					post.uuid = id;
+
+					store.save(post, function() {
+						callback();
+					});
 				});
 			}else{
 				callback();
