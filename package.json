@@ -27,6 +27,6 @@
         "underscore":    "1.5.2",
         "commander":     "*",
         "async":         "*",
-        "js-yaml":       "*"
+        "kitten":        "*"
     }
 }
